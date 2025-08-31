@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Isometric City Builder</title>
+  <style>
+    /* === FONT IMPORT === */
+    @font-face {
+      font-family: 'BoldPixels';
+      src: url('assets/fonts/BoldPixels1.4.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    * {
+      margin:0; 
+      padding:0; 
+      box-sizing:border-box; 
+    }
+
+    body {
+      font-family: 'BoldPixels', sans-serif;
+      background: url('assets/sky.png');
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #mainMenu {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: url('assets/sky.png');
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      z-index:1000; transition:opacity 0.5s;
+    }
+
+    #mainMenu h1 {
+      color:white; 
+      font-size:4em; 
+      margin-bottom:20px;
+      text-shadow:0 0 20px rgba(255,255,255,0.5);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%,100% { transform:translateY(0); }
+      50% { transform:translateY(-10px); }
+    }
+
+    .menuButton {
+      background: rgba(255,255,255,0.2);
+      border:2px solid white; 
+      color:white; 
+      padding:15px 40px;
+      font-size:1.2em; 
+      margin:10px; 
+      cursor:pointer; 
+      transition:all 0.3s;
+      border-radius:50px; 
+      backdrop-filter: blur(10px);
+      font-family: 'BoldPixels', sans-serif;
+    }
+
+    .menuButton:hover {
+      background:rgba(255,255,255,0.3); 
+      transform:scale(1.05); 
+      box-shadow:0 5px 20px rgba(255,255,255,0.3);
+    }
+
+    #multiplayerMenu {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: url('assets/sky.png');
+      display:none; flex-direction:column; justify-content:center; align-items:center;
+      z-index:1000;
+    }
+
+    #multiplayerMenu h2 {
+      color:white; 
+      font-size:3em; 
+      margin-bottom:30px;
+      text-shadow:0 0 20px rgba(255,255,255,0.5);
+    }
+
+    .multiplayerSection {
+      background: rgba(0,0,0,0.6);
+      padding: 30px;
+      margin: 20px;
+      border-radius: 15px;
+      border: 2px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(10px);
+      min-width: 400px;
+    }
+
+    .multiplayerSection h3 {
+      color: white;
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    #lobbyList {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    .lobbyItem {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+
+    .lobbyItem:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .inputField {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-family: 'BoldPixels', sans-serif;
+      backdrop-filter: blur(10px);
+    }
+
+    .inputField::placeholder {
+      color: rgba(255,255,255,0.7);
+    }
+
+    #gameContainer { display:none; width:100%; height:100vh; position:relative; }
+    #gameCanvas { position:absolute; top:0; left:0; cursor:grab; }
+    #gameCanvas:active { cursor:grabbing; }
+
+    #multiplayerStatus {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      z-index: 100;
+      display: none;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    #gui {
+      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+      background: url('assets/menurectangle.png');
+      background-size: 100% 100%;
+      padding:15px; 
+      border-radius:15px;
+      display:flex; gap:10px; 
+      backdrop-filter:blur(10px); 
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      font-family: 'BoldPixels', sans-serif;
+    }
+
+    .categoryButton {
+      width:60px; height:60px; 
+      background:rgba(255,255,255,0.1);
+      border:2px solid rgba(255,255,255,0.3); 
+      cursor:pointer; 
+      transition:all 0.3s;
+      border-radius:10px; 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:0.8em;
+      font-family: 'BoldPixels', sans-serif;
+      overflow: hidden;
+    }
+
+    .categoryButton:hover { 
+      background:rgba(255,255,255,0.2); 
+      transform:translateY(-2px);
+    }
+
+    .categoryButton.active { 
+      background:rgba(100,200,255,0.3); 
+      border-color:#64c8ff; 
+      box-shadow:0 0 15px rgba(100,200,255,0.5);
+    }
+
+    .categoryIcon { 
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .categoryLabel {
+      font-size: 0.7em;
+      color: white;
+      margin-top: 2px;
+    }
+
+    #buildingSubmenu {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: url('assets/menurectangle.png');
+      background-size: 100% 100%;
+      padding: 15px;
+      border-radius: 15px;
+      display: none;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      flex-wrap: wrap;
+      max-width: 80%;
+      justify-content: center;
+      z-index: 99;
+    }
+
+    .buildingButton {
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      font-family: 'BoldPixels', sans-serif;
+    }
+
+    .buildingButton:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    .buildingButton.active {
+      background: rgba(100,200,255,0.3);
+      border-color: #64c8ff;
+      box-shadow: 0 0 15px rgba(100,200,255,0.5);
+    }
+
+    .buildingIcon {
+      font-size: 1.5em;
+      margin-bottom: 2px;
+    }
+
+    #moneyDisplay {
+      position:fixed; 
+      bottom:80px; 
+      right:30px; 
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-family: 'BoldPixels', sans-serif;
+      z-index: 100;
+    }
+
+    #moneyIcon {
+      width:42px;
+      height:42px;
+      filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+    }
+
+    #money {
+      font-size: 2.2em;
+      color: white;
+      text-shadow: 
+        2px 2px 0 #000,
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        0 2px 0 #000,
+        2px 0 0 #000,
+        0 -2px 0 #000,
+        -2px 0 0 #000,
+        0 0 8px rgba(0, 0, 0, 0.8);
+      font-weight: bold;
+      transform: translateY(5px);
+    }
+
+    #populationDisplay {
+      position:fixed; 
+      bottom:30px; 
+      right:30px; 
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-family: 'BoldPixels', sans-serif;
+      z-index: 100;
+    }
+
+    #populationIcon {
+      width:42px;
+      height:42px;
+      filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+    }
+
+    #population {
+      font-size: 2.2em;
+      color: #b81111;
+      text-shadow: 
+        2px 2px 0 #000,
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        0 2px 0 #000,
+        2px 0 0 #000,
+        0 -2px 0 #000,
+        -2px 0 0 #000,
+        0 0 8px rgba(0, 0, 0, 0.8);
+      font-weight: bold;
+      transform: translateY(5px);
+    }
+
+    #happinessDisplay {
+      position:fixed; 
+      bottom:130px; 
+      right:30px; 
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-family: 'BoldPixels', sans-serif;
+      z-index: 100;
+    }
+
+    #happinessIcon {
+      width:42px;
+      height:42px;
+      filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+    }
+
+    #happiness {
+      font-size: 2.2em;
+      color: #4caf50;
+      text-shadow: 
+        2px 2px 0 #000,
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        0 2px 0 #000,
+        2px 0 0 #000,
+        0 -2px 0 #000,
+        -2px 0 0 #000,
+        0 0 8px rgba(0, 0, 0, 0.8);
+      font-weight: bold;
+      transform: translateY(5px);
+    }
+
+    #menuButton {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      z-index: 100;
+      transition: transform 0.3s;
+      filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+    }
+
+    #menuButton:hover {
+      transform: scale(1.1);
+    }
+
+    #gameMenu {
+      position: fixed;
+      top: 80px;
+      left: 20px;
+      width: 320px;
+      min-height: 450px;
+      background-image: url('assets/vertmenurectangle.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      z-index: 99;
+      display: none;
+      padding: 30px 25px;
+      color: white;
+      font-family: 'BoldPixels', sans-serif;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      border-radius: 12px;
+    }
+
+    #gameMenu h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 1.8em;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    .menuSection {
+      margin-bottom: 20px;
+      background: rgba(0,0,0,0.5);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .menuSection h3 {
+      margin-bottom: 12px;
+      font-size: 1.2em;
+      text-shadow: 1px 1px 0 #000;
+      text-align: center;
+    }
+
+    .menuOption {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .menuButtonSmall {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'BoldPixels', sans-serif;
+      transition: all 0.2s;
+      font-size: 0.9em;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .menuButtonSmall:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .slider {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    
+    #villagerRequest {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 1000;
+      max-width: 300px;
+      display: none;
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    #villagerRequest p {
+      margin-bottom: 10px;
+    }
+    
+    #villagerRequest button {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'BoldPixels', sans-serif;
+      margin-right: 5px;
+    }
+    
+    #villagerRequest button:hover {
+      background: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="mainMenu">
+    <h1>🏙️ City Builder</h1>
+    <button class="menuButton" onclick="startGame()">Start New City</button>
+    <button class="menuButton" onclick="showMultiplayer()">Multiplayer</button>
+    <button class="menuButton" onclick="showControls()">Controls</button>
+  </div>
+
+  <div id="multiplayerMenu">
+    <h2>🌐 Multiplayer</h2>
+    
+    <div class="multiplayerSection">
+      <h3>Create Room</h3>
+      <input type="text" id="roomNameInput" class="inputField" placeholder="Room Name" maxlength="20">
+      <input type="text" id="playerNameInput" class="inputField" placeholder="Your Name" maxlength="15">
+      <button class="menuButton" onclick="createRoom()">Create Room</button>
+    </div>
+    
+    <div class="multiplayerSection">
+      <h3>Join Room</h3>
+      <input type="text" id="joinRoomCode" class="inputField" placeholder="Room Code" maxlength="6">
+      <input type="text" id="joinPlayerName" class="inputField" placeholder="Your Name" maxlength="15">
+      <button class="menuButton" onclick="joinRoom()">Join Room</button>
+      
+      <div id="lobbyList"></div>
+    </div>
+    
+    <button class="menuButton" onclick="backToMainMenu()">Back to Main Menu</button>
+  </div>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+    <img id="menuButton" src="assets/menu.png" alt="Menu" onclick="toggleGameMenu()" style="display: none;">
+    
+    <div id="multiplayerStatus">
+      <div id="connectionStatus">Connecting...</div>
+      <div id="roomInfo"></div>
+      <div id="playerList"></div>
+    </div>
+    
+    <div id="gameMenu">
+      <h2>City Menu</h2>
+      
+      <div class="menuSection">
+        <h3>Taxation</h3>
+        <div class="menuOption">
+          <span>Tax Rate: </span>
+          <span id="menuTaxRate">10%</span>
+        </div>
+        <input type="range" min="1" max="30" value="10" class="slider" id="taxSlider">
+        <button class="menuButtonSmall" onclick="applyTaxRate()">Apply Tax Rate</button>
+      </div>
+      
+      <div class="menuSection">
+        <h3>Game Options</h3>
+        <button class="menuButtonSmall" onclick="showControls()">View Controls</button>
+        <button class="menuButtonSmall" onclick="saveGame()">Save Game</button>
+        <button class="menuButtonSmall" onclick="loadGame()">Load Game</button>
+      </div>
+      
+      <div class="menuSection">
+        <h3>System</h3>
+        <button class="menuButtonSmall" onclick="toggleFullscreen()">Toggle Fullscreen</button>
+        <button class="menuButtonSmall" onclick="returnToMainMenu()">Return to Main Menu</button>
+      </div>
+    </div>
+
+    <div id="buildingSubmenu"></div>
+
+    <div id="gui">
+      <div class="categoryButton" onclick="selectCategory('select')" id="selectCategory">
+        <span class="toolIcon">👆</span>
+        <span class="categoryLabel">Select</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('residential')" id="residentialCategory">
+        <img src="assets/residential.png" class="categoryIcon" alt="Residential">
+        <span class="categoryLabel">Residential</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('commercial')" id="commercialCategory">
+        <img src="assets/commercial.png" class="categoryIcon" alt="Commercial">
+        <span class="categoryLabel">Commercial</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('industrial')" id="industrialCategory">
+        <img src="assets/industrial.png" class="categoryIcon" alt="Industrial">
+        <span class="categoryLabel">Industrial</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('service')" id="serviceCategory">
+        <img src="assets/service.png" class="categoryIcon" alt="Service">
+        <span class="categoryLabel">Service</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('nature')" id="natureCategory">
+        <img src="assets/nature.png" class="categoryIcon" alt="Nature">
+        <span class="categoryLabel">Nature</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('misc')" id="miscCategory">
+        <img src="assets/misc.png" class="categoryIcon" alt="Misc">
+        <span class="categoryLabel">Misc</span>
+      </div>
+      <div class="categoryButton" onclick="selectCategory('delete')" id="deleteCategory">
+        <span class="toolIcon">🗑️</span>
+        <span class="categoryLabel">Delete</span>
+      </div>
+    </div>
+
+    <div id="happinessDisplay">
+      <img id="happinessIcon" src="assets/happy.png" alt="Happiness">
+      <span id="happiness">100%</span>
+    </div>
+
+    <div id="moneyDisplay">
+      <img id="moneyIcon" src="assets/money.png" alt="Money">
+      <span id="money">$10000</span>
+    </div>
+
+    <div id="populationDisplay">
+      <img id="populationIcon" src="assets/population.png" alt="Population">
+      <span id="population">0</span>
+    </div>
+  </div>
+
+  <div id="taxNotification" class="notification"></div>
+  <div id="villagerRequest"></div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // === MULTIPLAYER SYSTEM ===
+    let multiplayerState = {
+      isHost: false,
+      isConnected: false,
+      roomCode: null,
+      playerName: "",
+      connectedPeers: {},
+      localConnection: null,
+      rooms: {},
+      signaling: new BroadcastChannel('citybuilder_signaling')
+    };
+
+    // === GAME STATE ===
+    let gameState = {
+      grid: [],
+      gridWidth: 50,
+      gridHeight: 50,
+      tileSize: 64,
+      currentTool: "select",
+      cameraX: 0,
+      cameraY: -500,
+      zoom: 1,
+      isDragging: false,
+      lastMouseX: 0,
+      lastMouseY: 0,
+      money: 10000,
+      population: 0,
+      happiness: 100,
+      buildingCount: 0,
+      roadCount: 0,
+      roadRotation: 0, // 0 = normal, 1 = rotated, 2 = rotated3, 3 = rotated4
+      taxRate: 10, // Tax rate as percentage
+      lastTaxTime: 0,
+      taxInterval: 10000, // 10 seconds between tax collections
+      lastHappinessUpdate: 0,
+      happinessInterval: 5000, // 5 seconds between happiness updates
+      lastVillagerRequest: 0,
+      villagerRequestInterval: 30000, // 30 seconds between requests
+      activeRequest: null
+    };
+
+    // === BUILDING CATEGORIES ===
+    const buildingCategories = {
+      residential: [
+        { type: "house", name: "House", icon: "🏠", cost: 500 }
+      ],
+      commercial: [
+        { type: "shop", name: "Shop", icon: "🏪", cost: 1000 },
+        { type: "mall", name: "Shopping Mall", icon: "🏬", cost: 3000 }
+      ],
+      industrial: [
+        { type: "factory", name: "Factory", icon: "🏭", cost: 2000 },
+        { type: "powerplant", name: "Power Plant", icon: "🏗️", cost: 5000 }
+      ],
+      service: [
+        { type: "hospital", name: "Hospital", icon: "🏥", cost: 4000 },
+        { type: "school", name: "School", icon: "🏫", cost: 2500 },
+        { type: "police", name: "Police Station", icon: "👮", cost: 3000 }
+      ],
+      nature: [
+        { type: "tree", name: "Tree", icon: "🌳", cost: 20 },
+        { type: "park", name: "Park", icon: "🏞️", cost: 1000 }
+      ],
+      misc: [
+        { type: "road", name: "Road", icon: "🛤️", cost: 50 },
+        { type: "landmark", name: "Landmark", icon: "🗼", cost: 10000 }
+      ]
+    };
+
+    // === COSTS ===
+    const costs = { 
+      house:500, shop:1000, office:2000, road:50, tree:20,
+      mall:3000, factory:2000, powerplant:5000, hospital:4000,
+      school:2500, police:3000, park:1000, landmark:10000
+    };
+
+    // === PROPS (population only) ===
+    const buildingProps = {
+      house:{population:4}, 
+      shop:{population:0}, 
+      office:{population:0},
+      mall:{population:0},
+      factory:{population:0},
+      powerplant:{population:0},
+      hospital:{population:0},
+      school:{population:0},
+      police:{population:0},
+      park:{population:0},
+      landmark:{population:0},
+      road:{population:0}, 
+      tree:{population:0}
+    };
+
+    // === HAPPINESS FACTORS ===
+    const happinessFactors = {
+      taxRate: 0.3, // Reduced from 0.5 to make tax less punishing
+      treeDensity: 0.15, // Increased from 0.1 to make trees more effective
+      roadDensity: -0.03, // Reduced from -0.05 to make roads less punishing
+      buildingDensity: -0.01 // Reduced from -0.02 to make buildings less punishing
+    };
+
+    // === VILLAGER REQUESTS ===
+    const villagerRequests = [
+      {
+        type: "road",
+        message: "We need more roads to connect our city!",
+        reward: 15,
+        requirement: (state) => state.roadCount < 10
+      },
+      {
+        type: "house",
+        message: "Our population is growing, we need more houses!",
+        reward: 10,
+        requirement: (state) => state.population > 20 && state.buildingCount < 15
+      },
+      {
+        type: "shop",
+        message: "We need shops for supplies! Build a shop.",
+        reward: 12,
+        requirement: (state) => state.population > 10
+      },
+      {
+        type: "office",
+        message: "Our citizens need jobs! Build an office.",
+        reward: 15,
+        requirement: (state) => state.population > 15
+      },
+      {
+        type: "tree",
+        message: "Our city needs more greenery! Plant some trees.",
+        reward: 8,
+        requirement: (state) => true // Always available
+      },
+      {
+        type: "tax",
+        message: "Taxes are too high! Please lower them.",
+        reward: 20,
+        requirement: (state) => state.taxRate > 15
+      }
+    ];
+
+    // === MULTIPLAYER FUNCTIONS ===
+    function generateRoomCode() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    function createRoom() {
+      const roomName = document.getElementById("roomNameInput").value.trim();
+      const playerName = document.getElementById("playerNameInput").value.trim();
+      
+      if (!roomName || !playerName) {
+        alert("Please enter both room name and your name!");
+        return;
+      }
+      
+      multiplayerState.roomCode = generateRoomCode();
+      multiplayerState.playerName = playerName;
+      multiplayerState.isHost = true;
+      multiplayerState.rooms[multiplayerState.roomCode] = {
+        name: roomName,
+        host: playerName,
+        players: [playerName],
+        gameState: JSON.parse(JSON.stringify(gameState))
+      };
+      
+      // Broadcast room creation
+      multiplayerState.signaling.postMessage({
+        type: 'room_created',
+        roomCode: multiplayerState.roomCode,
+        roomName: roomName,
+        host: playerName
+      });
+      
+      startMultiplayerGame();
+    }
+
+    function joinRoom() {
+      const roomCode = document.getElementById("joinRoomCode").value.trim().toUpperCase();
+      const playerName = document.getElementById("joinPlayerName").value.trim();
+      
+      if (!roomCode || !playerName) {
+        alert("Please enter both room code and your name!");
+        return;
+      }
+      
+      // Request to join room
+      multiplayerState.signaling.postMessage({
+        type: 'join_request',
+        roomCode: roomCode,
+        playerName: playerName
+      });
+      
+      multiplayerState.roomCode = roomCode;
+      multiplayerState.playerName = playerName;
+      multiplayerState.isHost = false;
+      
+      setTimeout(() => {
+        if (!multiplayerState.isConnected) {
+          alert("Could not connect to room. Please check the room code.");
+        }
+      }, 3000);
+    }
+
+    function startMultiplayerGame() {
+      document.getElementById("multiplayerMenu").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      document.getElementById("menuButton").style.display = "block";
+      document.getElementById("multiplayerStatus").style.display = "block";
+      
+      multiplayerState.isConnected = true;
+      updateMultiplayerUI();
+      startGame();
+    }
+
+    function updateMultiplayerUI() {
+      const statusDiv = document.getElementById("connectionStatus");
+      const roomInfoDiv = document.getElementById("roomInfo");
+      const playerListDiv = document.getElementById("playerList");
+      
+      if (multiplayerState.isConnected) {
+        statusDiv.textContent = "Connected";
+        statusDiv.style.color = "#4caf50";
+        roomInfoDiv.textContent = `Room: ${multiplayerState.roomCode}`;
+        
+        const room = multiplayerState.rooms[multiplayerState.roomCode];
+        if (room) {
+          playerListDiv.innerHTML = `Players: ${room.players.join(", ")}`;
+        }
+      } else {
+        statusDiv.textContent = "Disconnected";
+        statusDiv.style.color = "#f44336";
+      }
+    }
+
+    function broadcastGameUpdate(action) {
+      if (!multiplayerState.isConnected) return;
+      
+      const message = {
+        type: 'game_update',
+        roomCode: multiplayerState.roomCode,
+        playerName: multiplayerState.playerName,
+        action: action,
+        gameState: JSON.parse(JSON.stringify(gameState))
+      };
+      
+      multiplayerState.signaling.postMessage(message);
+    }
+
+    function handleMultiplayerMessage(event) {
+      const message = event.data;
+      
+      switch (message.type) {
+        case 'room_created':
+          // Add room to available rooms list
+          if (!multiplayerState.rooms[message.roomCode]) {
+            multiplayerState.rooms[message.roomCode] = {
+              name: message.roomName,
+              host: message.host,
+              players: [message.host]
+            };
+            updateRoomList();
+          }
+          break;
+          
+        case 'join_request':
+          if (multiplayerState.isHost && message.roomCode === multiplayerState.roomCode) {
+            // Accept the join request
+            const room = multiplayerState.rooms[multiplayerState.roomCode];
+            if (room && room.players.length < 4) { // Max 4 players
+              room.players.push(message.playerName);
+              
+              multiplayerState.signaling.postMessage({
+                type: 'join_accepted',
+                roomCode: message.roomCode,
+                playerName: message.playerName,
+                gameState: JSON.parse(JSON.stringify(gameState)),
+                roomData: room
+              });
+              
+              updateMultiplayerUI();
+            }
+          }
+          break;
+          
+        case 'join_accepted':
+          if (message.playerName === multiplayerState.playerName && message.roomCode === multiplayerState.roomCode) {
+            // Successfully joined room
+            multiplayerState.rooms[message.roomCode] = message.roomData;
+            gameState = JSON.parse(JSON.stringify(message.gameState));
+            startMultiplayerGame();
+          }
+          break;
+          
+        case 'game_update':
+          if (message.roomCode === multiplayerState.roomCode && 
+              message.playerName !== multiplayerState.playerName && 
+              multiplayerState.isConnected) {
+            // Receive game update from other player
+            gameState = JSON.parse(JSON.stringify(message.gameState));
+            updateStats();
+            updateHappinessDisplay();
+          }
+          break;
+          
+        case 'player_disconnected':
+          if (message.roomCode === multiplayerState.roomCode) {
+            const room = multiplayerState.rooms[multiplayerState.roomCode];
+            if (room) {
+              room.players = room.players.filter(p => p !== message.playerName);
+              updateMultiplayerUI();
+            }
+          }
+          break;
+      }
+    }
+
+    function updateRoomList() {
+      const lobbyList = document.getElementById("lobbyList");
+      lobbyList.innerHTML = "";
+      
+      Object.entries(multiplayerState.rooms).forEach(([code, room]) => {
+        if (room.players.length < 4) { // Don't show full rooms
+          const lobbyItem = document.createElement("div");
+          lobbyItem.className = "lobbyItem";
+          lobbyItem.innerHTML = `
+            <div>
+              <strong>${room.name}</strong><br>
+              <small>Host: ${room.host} | Players: ${room.players.length}/4</small>
+            </div>
+            <button onclick="quickJoin('${code}')" style="background: rgba(100,200,255,0.3); border: 1px solid #64c8ff; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Join</button>
+          `;
+          lobbyList.appendChild(lobbyItem);
+        }
+      });
+    }
+
+    function quickJoin(roomCode) {
+      const playerName = document.getElementById("joinPlayerName").value.trim();
+      if (!playerName) {
+        alert("Please enter your name first!");
+        return;
+      }
+      
+      document.getElementById("joinRoomCode").value = roomCode;
+      joinRoom();
+    }
+
+    function showMultiplayer() {
+      document.getElementById("mainMenu").style.display = "none";
+      document.getElementById("multiplayerMenu").style.display = "flex";
+      updateRoomList();
+    }
+
+    function backToMainMenu() {
+      document.getElementById("multiplayerMenu").style.display = "none";
+      document.getElementById("mainMenu").style.display = "flex";
+    }
+
+    // Initialize multiplayer signaling
+    multiplayerState.signaling.addEventListener('message', handleMultiplayerMessage);
+
+    // === SPRITES ===
+    const images = {};
+    const spriteList = [
+      "grass","house","shop","office","road","roadrotated","roadrotation3","roadrotation4",
+      "tree","money","population","menu","vertmenurectangle","happy","meh","bad","sky",
+      "menurectangle","residential","commercial","industrial","service","nature","misc",
+      "mall","factory","powerplant","hospital","school","police","park","landmark"
+    ];
+
+    function loadSprites() {
+      let loaded = 0;
+      return new Promise(resolve => {
+        spriteList.forEach(name => {
+          const img = new Image();
+          img.src = `assets/${name}.png`;
+          img.onload = () => {
+            loaded++;
+            if (loaded === spriteList.length) resolve();
+          };
+          images[name] = img;
+        });
+      });
+    }
+
+    // === INIT GAME ===
+    function initGame() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      gameState.grid = [];
+      for (let y=0;y<gameState.gridHeight;y++){
+        gameState.grid[y] = [];
+        for (let x=0;x<gameState.gridWidth;x++){ 
+          gameState.grid[y][x] = null; 
+        }
+      }
+
+      canvas.addEventListener("mousedown", handleMouseDown);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("mouseup", handleMouseUp);
+      canvas.addEventListener("wheel", handleWheel);
+      canvas.addEventListener("contextmenu", e=>e.preventDefault());
+      
+      // Add keyboard listener for road rotation
+      document.addEventListener("keydown", handleKeyDown);
+
+      window.addEventListener("resize", ()=>{
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+
+      gameState.lastTaxTime = Date.now();
+      gameState.lastHappinessUpdate = Date.now();
+      gameState.lastVillagerRequest = Date.now();
+      gameLoop();
+    }
+
+    // === KEYBOARD HANDLER ===
+    function handleKeyDown(e) {
+      // Rotate road when 'R' key is pressed
+      if (e.key === 'r' || e.key === 'R') {
+        if (gameState.currentTool === 'road') {
+          gameState.roadRotation = (gameState.roadRotation + 1) % 4; // Cycle through 4 rotations
+        }
+      }
+      
+      // Close menu with Escape key
+      if (e.key === 'Escape') {
+        closeGameMenu();
+        closeBuildingSubmenu();
+      }
+    }
+
+    // === ISOMETRIC CONVERSION ===
+    function toIsometric(x,y){
+      return {
+        x:(x-y)*(gameState.tileSize/2),
+        y:(x+y)*(gameState.tileSize/4)
+      };
+    }
+    function toGrid(screenX,screenY){
+      const offsetX = screenX - canvas.width/2 - gameState.cameraX;
+      const offsetY = screenY - canvas.height/2 - gameState.cameraY;
+      const x = (offsetX/(gameState.tileSize/2) + offsetY/(gameState.tileSize/4))/2;
+      const y = (offsetY/(gameState.tileSize/4) - offsetX/(gameState.tileSize/2))/2;
+      return {x:Math.floor(x), y:Math.floor(y)};
+    }
+
+    // === DRAWING ===
+    function drawTile(x,y,type, rotated){
+      const iso = toIsometric(x,y);
+      const screenX = iso.x + canvas.width/2 + gameState.cameraX;
+      const screenY = iso.y + canvas.height/2 + gameState.cameraY;
+      
+      // Handle rotated roads
+      let spriteName = type;
+      if (type === 'road') {
+        if (rotated === 1) spriteName = 'roadrotated';
+        else if (rotated === 2) spriteName = 'roadrotation3';
+        else if (rotated === 3) spriteName = 'roadrotation4';
+      }
+      
+      const sprite = images[spriteName||"grass"];
+      ctx.drawImage(sprite, screenX - gameState.tileSize/2, screenY - gameState.tileSize/2, gameState.tileSize, gameState.tileSize);
+    }
+
+    function drawGrid(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // Draw the base grid (grass)
+      for (let y=0;y<gameState.gridHeight;y++){
+        for (let x=0;x<gameState.gridWidth;x++){
+          drawTile(x,y,"grass");
+        }
+      }
+
+      // Collect all objects to be drawn
+      let objectsToDraw = [];
+
+      // Add all objects to the array with their coordinates and type
+      for (let y=0;y<gameState.gridHeight;y++){
+        for (let x=0;x<gameState.gridWidth;x++){
+          const tile = gameState.grid[y][x];
+          if (tile){
+            objectsToDraw.push({
+              x: x,
+              y: y,
+              type: tile.type,
+              rotated: tile.rotated || 0
+            });
+          }
+        }
+      }
+
+      // Sort objects by Y-coordinate (and then X-coordinate) for proper depth
+      objectsToDraw.sort((a, b) => {
+        // First sort by Y (higher Y values should be drawn later/on top)
+        if (a.y !== b.y) return a.y - b.y;
+        // If same Y, sort by X (higher X values should be drawn later/on top)
+        return a.x - b.x;
+      });
+
+      // Draw all objects in sorted order
+      for (let obj of objectsToDraw){
+        drawTile(obj.x, obj.y, obj.type, obj.rotated);
+      }
+
+      // Draw placement preview
+      if (gameState.currentTool!=="select" && gameState.currentTool!=="delete"){
+        const gridPos = toGrid(gameState.lastMouseX, gameState.lastMouseY);
+        if (gridPos.x>=0 && gridPos.x<gameState.gridWidth && gridPos.y>=0 && gridPos.y<gameState.gridHeight){
+          const iso = toIsometric(gridPos.x,gridPos.y);
+          ctx.globalAlpha = 0.5;
+          
+          // Handle road rotation preview
+          let spriteName = gameState.currentTool;
+          if (gameState.currentTool === 'road') {
+            if (gameState.roadRotation === 1) spriteName = 'roadrotated';
+            else if (gameState.roadRotation === 2) spriteName = 'roadrotation3';
+            else if (gameState.roadRotation === 3) spriteName = 'roadrotation4';
+          }
+          
+          ctx.drawImage(images[spriteName],
+            iso.x + canvas.width/2 + gameState.cameraX - gameState.tileSize/2,
+            iso.y + canvas.height/2 + gameState.cameraY - gameState.tileSize/2,
+            gameState.tileSize, gameState.tileSize);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    // === MOUSE ===
+    function handleMouseDown(e){
+      if (e.button===2 || (e.button===0 && gameState.currentTool==="select")){
+        gameState.isDragging=true;
+        gameState.lastMouseX=e.clientX;
+        gameState.lastMouseY=e.clientY;
+      } else if (e.button===0){ placeTile(e.clientX,e.clientY); }
+    }
+    function handleMouseMove(e){
+      if (gameState.isDragging){
+        const dx=e.clientX-gameState.lastMouseX;
+        const dy=e.clientY-gameState.lastMouseY;
+        gameState.cameraX+=dx; gameState.cameraY+=dy;
+      }
+      gameState.lastMouseX=e.clientX; gameState.lastMouseY=e.clientY;
+    }
+    function handleMouseUp(){ gameState.isDragging=false; }
+    function handleWheel(e){
+      e.preventDefault();
+      const delta = e.deltaY>0 ? 0.9 : 1.1;
+      gameState.tileSize = Math.max(32, Math.min(128, gameState.tileSize*delta));
+    }
+
+    // === TILE PLACEMENT ===
+    function placeTile(x,y){
+      const gridPos = toGrid(x,y);
+      if (gridPos.x<0 || gridPos.x>=gameState.gridWidth && gridPos.y<0 || gridPos.y>=gameState.gridHeight) return;
+      
+      if (gameState.currentTool==="delete"){
+        const tile = gameState.grid[gridPos.y][gridPos.x];
+        if (tile){
+          if (costs[tile.type]) gameState.money+=Math.floor(costs[tile.type]/2);
+          if (tile.type==="road"){ gameState.roadCount--; }
+          else if (tile.type!=="tree" && tile.type!=="park"){
+            gameState.buildingCount--;
+            if (buildingProps[tile.type].population>0){ gameState.population-=buildingProps[tile.type].population; }
+          }
+          gameState.grid[gridPos.y][gridPos.x]=null;
+          
+          // Broadcast multiplayer update
+          if (multiplayerState.isConnected) {
+            broadcastGameUpdate({
+              type: 'delete_tile',
+              x: gridPos.x,
+              y: gridPos.y
+            });
+          }
+        }
+      } else if (gameState.currentTool!=="select"){
+        const cost = costs[gameState.currentTool];
+        if (gameState.money<cost) return;
+        if (gameState.grid[gridPos.y][gridPos.x]===null){
+          // Store road rotation state
+          const tileData = {
+            type: gameState.currentTool,
+            rotated: gameState.currentTool === 'road' ? gameState.roadRotation : 0
+          };
+          
+          gameState.grid[gridPos.y][gridPos.x] = tileData;
+          gameState.money-=cost;
+          
+          if (gameState.currentTool==="road"){ gameState.roadCount++; }
+          else if (gameState.currentTool!=="tree" && gameState.currentTool!=="park"){
+            gameState.buildingCount++;
+            if (buildingProps[gameState.currentTool].population>0){
+              gameState.population+=buildingProps[gameState.currentTool].population;
+            }
+          }
+          
+          // Check if this fulfills an active villager request
+          checkVillagerRequestFulfillment(gameState.currentTool);
+          
+          // Broadcast multiplayer update
+          if (multiplayerState.isConnected) {
+            broadcastGameUpdate({
+              type: 'place_tile',
+              x: gridPos.x,
+              y: gridPos.y,
+              tileData: tileData
+            });
+          }
+        }
+      }
+      updateStats();
+    }
+
+    // === BUILDING CATEGORY SYSTEM ===
+    function selectCategory(category) {
+      document.querySelectorAll(".categoryButton").forEach(btn => btn.classList.remove("active"));
+      document.getElementById(category + "Category").classList.add("active");
+      
+      if (category === "select") {
+        gameState.currentTool = "select";
+        canvas.style.cursor = "grab";
+        closeBuildingSubmenu();
+      } else if (category === "delete") {
+        gameState.currentTool = "delete";
+        canvas.style.cursor = "crosshair";
+        closeBuildingSubmenu();
+      } else {
+        showBuildingSubmenu(category);
+      }
+    }
+    
+    function showBuildingSubmenu(category) {
+      const submenu = document.getElementById("buildingSubmenu");
+      submenu.innerHTML = "";
+      submenu.style.display = "flex";
+      
+      buildingCategories[category].forEach(building => {
+        const button = document.createElement("div");
+        button.className = "buildingButton";
+        button.innerHTML = `
+          <span class="buildingIcon">${building.icon}</span>
+          <span>${building.name}</span>
+        `;
+        button.onclick = () => {
+          gameState.currentTool = building.type;
+          document.querySelectorAll(".buildingButton").forEach(btn => btn.classList.remove("active"));
+          button.classList.add("active");
+          canvas.style.cursor = "pointer";
+        };
+        submenu.appendChild(button);
+      });
+    }
+    
+    function closeBuildingSubmenu() {
+      document.getElementById("buildingSubmenu").style.display = "none";
+    }
+
+    // === VILLAGER REQUEST SYSTEM ===
+    function generateVillagerRequest() {
+      const now = Date.now();
+      if (now - gameState.lastVillagerRequest >= gameState.villagerRequestInterval && !gameState.activeRequest) {
+        // Filter available requests based on requirements
+        const availableRequests = villagerRequests.filter(request => request.requirement(gameState));
+        
+        if (availableRequests.length > 0) {
+          const randomRequest = availableRequests[Math.floor(Math.random() * availableRequests.length)];
+          gameState.activeRequest = randomRequest;
+          
+          // Show the request to the player
+          showVillagerRequest(randomRequest);
+          gameState.lastVillagerRequest = now;
+        }
+      }
+    }
+    
+    function showVillagerRequest(request) {
+      const requestElement = document.getElementById("villagerRequest");
+      requestElement.innerHTML = `
+        <p>${request.message}</p>
+        <div>
+          <button onclick="fulfillVillagerRequest()">I'll do it! (+${request.reward}% happiness)</button>
+          <button onclick="ignoreVillagerRequest()">Maybe later</button>
+        </div>
+      `;
+      requestElement.style.display = "block";
+    }
+    
+    function fulfillVillagerRequest() {
+      if (gameState.activeRequest) {
+        gameState.happiness = Math.min(100, gameState.happiness + gameState.activeRequest.reward);
+        updateHappinessDisplay();
+        showNotification(`Request fulfilled! +${gameState.activeRequest.reward}% happiness`);
+        closeVillagerRequest();
+      }
+    }
+    
+    function ignoreVillagerRequest() {
+      showNotification("The villagers are disappointed...");
+      closeVillagerRequest();
+    }
+    
+    function closeVillagerRequest() {
+      document.getElementById("villagerRequest").style.display = "none";
+      gameState.activeRequest = null;
+    }
+    
+    function checkVillagerRequestFulfillment(buildingType) {
+      if (gameState.activeRequest && gameState.activeRequest.type === buildingType) {
+        fulfillVillagerRequest();
+      }
+    }
+
+    // === HAPPINESS SYSTEM ===
+    function updateHappiness() {
+      const now = Date.now();
+      if (now - gameState.lastHappinessUpdate >= gameState.happinessInterval) {
+        // Count trees
+        let treeCount = 0;
+        for (let y = 0; y < gameState.gridHeight; y++) {
+          for (let x = 0; x < gameState.gridWidth; x++) {
+            if (gameState.grid[y][x] && gameState.grid[y][x].type === "tree") {
+              treeCount++;
+            }
+          }
+        }
+        
+        // Calculate densities
+        const totalTiles = gameState.gridWidth * gameState.gridHeight;
+        const treeDensity = treeCount / totalTiles;
+        const roadDensity = gameState.roadCount / totalTiles;
+        const buildingDensity = gameState.buildingCount / totalTiles;
+        
+        // Calculate happiness change (slower changes)
+        let happinessChange = 0;
+        happinessChange -= gameState.taxRate * happinessFactors.taxRate * 0.2; // Reduced impact
+        happinessChange += treeDensity * 100 * happinessFactors.treeDensity * 0.3;
+        happinessChange += roadDensity * 100 * happinessFactors.roadDensity * 0.2;
+        happinessChange += buildingDensity * 100 * happinessFactors.buildingDensity * 0.2;
+        
+        // Apply change (capped at 0-100)
+        gameState.happiness = Math.max(0, Math.min(100, gameState.happiness + happinessChange));
+        
+        gameState.lastHappinessUpdate = now;
+        updateHappinessDisplay();
+      }
+    }
+    
+    function updateHappinessDisplay() {
+      const happinessElement = document.getElementById("happiness");
+      const happinessIcon = document.getElementById("happinessIcon");
+      
+      happinessElement.textContent = Math.round(gameState.happiness) + "%";
+      
+      // Update icon based on happiness level
+      if (gameState.happiness >= 60) {
+        happinessIcon.src = "assets/happy.png";
+        happinessElement.style.color = "#4caf50"; // Green for happy
+      } else if (gameState.happiness >= 35) {
+        happinessIcon.src = "assets/meh.png";
+        happinessElement.style.color = "#f2e466"; // Yellow for meh
+      } else {
+        happinessIcon.src = "assets/bad.png";
+        happinessElement.style.color = "#f44336"; // Red for bad
+      }
+    }
+
+    // === TAX SYSTEM ===
+    function collectTaxes() {
+      const now = Date.now();
+      if (now - gameState.lastTaxTime >= gameState.taxInterval) {
+        if (gameState.population > 0) {
+          // Happiness affects tax collection efficiency
+          const taxEfficiency = gameState.happiness / 100;
+          const taxAmount = Math.floor(gameState.population * gameState.taxRate * taxEfficiency);
+          gameState.money += taxAmount;
+          gameState.lastTaxTime = now;
+          
+          // Show tax notification
+          showNotification(`Tax collected: ${taxAmount}`);
+          updateStats();
+        }
+      }
+    }
+
+    function changeTaxRate() {
+      const newRate = prompt("Enter new tax rate (1-30%):", gameState.taxRate);
+      if (newRate !== null) {
+        const rate = parseInt(newRate);
+        if (!isNaN(rate) && rate >= 1 && rate <= 30) {
+          gameState.taxRate = rate;
+          document.getElementById("menuTaxRate").textContent = rate + "%";
+          document.getElementById("taxSlider").value = rate;
+          showNotification(`Tax rate set to ${rate}%`);
+        } else {
+          alert("Please enter a valid tax rate between 1% and 30%");
+        }
+      }
+    }
+    
+    function applyTaxRate() {
+      const slider = document.getElementById("taxSlider");
+      const newRate = parseInt(slider.value);
+      if (!isNaN(newRate) && newRate >= 1 && newRate <= 30) {
+        gameState.taxRate = newRate;
+        document.getElementById("menuTaxRate").textContent = newRate + "%";
+        showNotification(`Tax rate set to ${newRate}%`);
+      }
+    }
+
+    function showNotification(message) {
+      const notification = document.getElementById("taxNotification");
+      notification.textContent = message;
+      notification.style.opacity = "1";
+      
+      setTimeout(() => {
+        notification.style.opacity = "0";
+      }, 3000);
+    }
+
+    // === GAME MENU FUNCTIONS ===
+    function toggleGameMenu() {
+      const menu = document.getElementById("gameMenu");
+      if (menu.style.display === "block") {
+        closeGameMenu();
+      } else {
+        openGameMenu();
+      }
+    }
+    
+    function openGameMenu() {
+      const menu = document.getElementById("gameMenu");
+      menu.style.display = "block";
+      // Update tax slider to current value
+      document.getElementById("taxSlider").value = gameState.taxRate;
+      document.getElementById("menuTaxRate").textContent = gameState.taxRate + "%";
+    }
+    
+    function closeGameMenu() {
+      document.getElementById("gameMenu").style.display = "none";
+    }
+    
+    function returnToMainMenu() {
+      if (confirm("Return to main menu? Any unsaved progress will be lost.")) {
+        closeGameMenu();
+        closeBuildingSubmenu();
+        document.getElementById("mainMenu").style.display = "flex";
+        document.getElementById("gameContainer").style.display = "none";
+        document.getElementById("menuButton").style.display = "none";
+        document.getElementById("multiplayerStatus").style.display = "none";
+        
+        // Disconnect from multiplayer
+        if (multiplayerState.isConnected) {
+          multiplayerState.signaling.postMessage({
+            type: 'player_disconnected',
+            roomCode: multiplayerState.roomCode,
+            playerName: multiplayerState.playerName
+          });
+          multiplayerState.isConnected = false;
+          multiplayerState.roomCode = null;
+        }
+      }
+    }
+    
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+    
+    function saveGame() {
+      const saveData = {
+        gameState: gameState,
+        multiplayerState: {
+          isHost: multiplayerState.isHost,
+          roomCode: multiplayerState.roomCode,
+          playerName: multiplayerState.playerName
+        }
+      };
+      localStorage.setItem('cityBuilderSave', JSON.stringify(saveData));
+      showNotification("Game saved successfully!");
+      closeGameMenu();
+    }
+    
+    function loadGame() {
+      const savedData = localStorage.getItem('cityBuilderSave');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        gameState = data.gameState;
+        if (data.multiplayerState) {
+          multiplayerState.isHost = data.multiplayerState.isHost;
+          multiplayerState.roomCode = data.multiplayerState.roomCode;
+          multiplayerState.playerName = data.multiplayerState.playerName;
+        }
+        updateStats();
+        updateHappinessDisplay();
+        document.getElementById("menuTaxRate").textContent = gameState.taxRate + "%";
+        document.getElementById("taxSlider").value = gameState.taxRate;
+        showNotification("Game loaded successfully!");
+        closeGameMenu();
+      } else {
+        showNotification("No saved game found!");
+      }
+    }
+
+    // === UI ===
+    function updateStats(){
+      document.getElementById("money").textContent=`${gameState.money}`;
+      document.getElementById("population").textContent=gameState.population;
+    }
+
+    function gameLoop(){ 
+      drawGrid(); 
+      collectTaxes();
+      updateHappiness();
+      generateVillagerRequest();
+      requestAnimationFrame(gameLoop); 
+    }
+
+    // === MENU ===
+    async function startGame(){
+      await loadSprites();
+      if (!multiplayerState.isConnected) {
+        document.getElementById("mainMenu").style.display="none";
+        document.getElementById("gameContainer").style.display="block";
+        document.getElementById("menuButton").style.display="block";
+      }
+      initGame(); 
+      selectCategory("select"); 
+      updateStats(); 
+      updateHappinessDisplay();
+    }
+    
+    function showControls(){
+      alert("Controls:\n\n• Left Click: Place/Delete buildings\n• Right Click or Select Tool: Pan camera\n• Scroll: Zoom in/out\n• Bottom toolbar: Select building categories\n• Click a category to see available buildings\n• R Key: Rotate roads (4 rotations available)\n• ESC: Close menu\n\nBuild your city!\n\nTAX SYSTEM:\n• Taxes are collected automatically every 10 seconds\n• Tax rate can be adjusted (1-30%)\n• Higher population = more tax income\n\nHAPPINESS SYSTEM:\n• Happiness affects tax collection efficiency\n• Trees increase happiness\n• High tax rates decrease happiness\n• Too many roads and buildings decrease happiness\n\nVILLAGER REQUESTS:\n• Villagers will occasionally make requests\n• Fulfilling requests increases happiness\n• Ignoring requests may disappoint them\n\nMULTIPLAYER:\n• Create or join rooms with up to 4 players\n• Build together on the same city\n• All changes are synchronized in real-time\n• Use room codes to connect with friends");
+    }
+  </script>
+</body>
+</html>
